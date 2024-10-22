@@ -15,7 +15,7 @@
  * - It's essential to test the trigger thoroughly after making any changes to ensure its correct functionality.
  * - Debugging skills will be tested, so students should look out for discrepancies between the expected and actual behavior.
  */
-trigger LeadTrigger on Lead(before insert) {
+trigger LeadTrigger on Lead(before insert, before update, after insert, after update) {
 	switch on Trigger.operationType {
 		when BEFORE_INSERT {
 			LeadTriggerHandler.handleTitleNormalization(Trigger.new);
@@ -26,10 +26,32 @@ trigger LeadTrigger on Lead(before insert) {
 			LeadTriggerHandler.handleAutoLeadScoring(Trigger.new);
 		}
 		when AFTER_INSERT {
-			LeadTriggerHandler.handleLeadAutoConvert(Trigger.new);
+			// LeadTriggerHandler.handleLeadAutoConvert(Trigger.new); (Original Code)
+
+			// Check if lead's Email is populated;
+			List<Lead> leadsToAutoConvert = new List<Lead>();
+			for (Lead l : Trigger.new) {
+				if (l.Email != NULL) {
+					leadsToAutoConvert.add(l);
+				}
+			}
+			if (!leadsToAutoConvert.isEmpty()) {
+				LeadTriggerHandler.handleLeadAutoConvert(leadsToAutoConvert);				
+			}
 		}
 		when AFTER_UPDATE {
-			LeadTriggerHandler.handleLeadAutoConvert(Trigger.new);
+			// LeadTriggerHandler.handleLeadAutoConvert(Trigger.new); (Original Code)
+
+			// Check if lead's Email is updated AND IsConverted != TRUE
+			List<Lead> leadsToAutoConvert = new List<Lead>();
+			for (Lead l : Trigger.new) {
+				if (l.Email != Trigger.oldMap.get(l.Id).Email && l.IsConverted != TRUE) {
+					leadsToAutoConvert.add(l);
+				}
+			}
+			if (!leadsToAutoConvert.isEmpty()) {
+				LeadTriggerHandler.handleLeadAutoConvert(leadsToAutoConvert);				
+			}
 		}
 	}
 }
